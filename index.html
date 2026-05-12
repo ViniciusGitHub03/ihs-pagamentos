@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IHS Relatório de Pagamento</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f5;
+      color: #1a2e2e;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0a2e2e 0%, #0d4a4a 60%, #0e6b6b 100%);
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+    }
+
+    header .logo-box {
+      background: #00c9c9;
+      border-radius: 10px;
+      width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1rem; color: #0a2e2e;
+      letter-spacing: -1px;
+      box-shadow: 0 2px 8px rgba(0,201,201,0.4);
+    }
+
+    header .title-group { display: flex; flex-direction: column; }
+    header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
+    header span { font-size: 0.72rem; color: #7eeaea; letter-spacing: 1px; text-transform: uppercase; }
+
+    nav {
+      display: flex;
+      background: #0a2e2e;
+      padding: 0 32px;
+      border-bottom: 2px solid #00c9c9;
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      color: #7eeaea;
+      padding: 14px 22px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    nav button:hover { color: #00c9c9; }
+    nav button.active { color: #00c9c9; border-bottom-color: #00c9c9; font-weight: 700; }
+
+    .tab { display: none; padding: 28px 32px; }
+    .tab.active { display: block; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      margin-bottom: 24px;
+      border-top: 3px solid #00c9c9;
+    }
+
+    .card h2 {
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      color: #0a2e2e;
+      border-bottom: 1.5px solid #e0f5f5;
+      padding-bottom: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.78rem; font-weight: 700; color: #0a4a4a; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    input, select {
+      padding: 10px 12px;
+      border: 1.5px solid #b2d8d8;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: border 0.2s;
+      outline: none;
+      color: #1a2e2e;
+      background: #fafdfd;
+    }
+
+    input:focus, select:focus { border-color: #00c9c9; background: white; box-shadow: 0 0 0 3px rgba(0,201,201,0.12); }
+
+    .btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 700;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-primary { background: #00c9c9; color: #0a2e2e; }
+    .btn-primary:hover { background: #00a8a8; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,201,201,0.3); }
+    .btn-secondary { background: #0a2e2e; color: #00c9c9; border: 1.5px solid #00c9c9; }
+    .btn-secondary:hover { background: #0d4a4a; }
+    .btn-danger { background: #e53e3e; color: white; font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; }
+    .btn-danger:hover { background: #c53030; }
+    .btn-excel { background: #1a7a3a; color: white; }
+    .btn-excel:hover { background: #155e2c; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(26,122,58,0.3); }
+    .btn-print { background: #0a2e2e; color: #7eeaea; border: 1.5px solid #00c9c9; }
+    .btn-print:hover { background: #0d4a4a; }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead tr { background: #0a2e2e; color: #00c9c9; }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.4px; }
+    tbody tr:nth-child(even) { background: #f0fbfb; }
+    tbody tr:hover { background: #e0f7f7; }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid #e0f5f5; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.73rem;
+      font-weight: 700;
+    }
+
+    .badge-teal { background: #e0f7f7; color: #0a6a6a; border: 1px solid #b2e8e8; }
+    .badge-green { background: #e6f9ee; color: #1a7a3a; border: 1px solid #b2dfc4; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border-left: 4px solid #00c9c9;
+    }
+
+    .stat-card .label { font-size: 0.75rem; color: #5a8a8a; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat-card .value { font-size: 1.45rem; font-weight: 800; color: #0a2e2e; }
+
+    /* Relatório */
+    .relatorio-bloco { margin-bottom: 28px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+
+    .mes-header {
+      background: linear-gradient(135deg, #0a2e2e, #0d4a4a);
+      color: white;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .mes-header .mes-total { font-size: 0.85rem; color: #00c9c9; font-weight: 700; }
+
+    .cliente-bloco { border: 1px solid #d0eeee; border-top: none; background: white; }
+
+    .cliente-header {
+      background: #e8f9f9;
+      padding: 9px 18px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: #0a4a4a;
+      border-bottom: 1px solid #c0e8e8;
+    }
+
+    .cliente-header .cli-doc { font-weight: 500; color: #5a8a8a; margin-left: 8px; font-size: 0.78rem; }
+    .cliente-header .cli-subtotal { color: #00a8a8; font-weight: 800; }
+
+    .pag-table th { padding: 7px 18px; font-size: 0.75rem; background: #f4fcfc; color: #0a6a6a; text-transform: uppercase; letter-spacing: 0.4px; }
+    .pag-table td { padding: 8px 18px; font-size: 0.82rem; border-bottom: 1px solid #f0f8f8; }
+    .pag-total-row td { background: #e8f9f9; font-weight: 700; color: #0a4a4a; border-top: 2px solid #00c9c9; }
+
+    .consolidado-table th { background: #0a2e2e; color: #00c9c9; padding: 10px 14px; font-size: 0.75rem; text-transform: uppercase; }
+    .consolidado-table td { padding: 9px 14px; font-size: 0.82rem; }
+    .consolidado-table tbody tr:nth-child(even) { background: #f0fbfb; }
+    .consolidado-table tfoot td { background: #0d4a4a; color: #00c9c9; font-weight: 700; padding: 10px 14px; }
+
+    .filtros {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      align-items: flex-end;
+    }
+
+    .filtros .form-group { min-width: 160px; }
+
+    .empty { text-align: center; color: #7aaaa0; padding: 40px; font-size: 0.9rem; }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #00a8a8;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+
+    .toast.show { opacity: 1; }
+    .toast.error { background: #e53e3e; }
+
+    @media print {
+      nav, .btn-row, .filtros, header, .btn { display: none !important; }
+      .tab { display: block !important; padding: 0; }
+      body { background: white; }
+      .relatorio-bloco { box-shadow: none; border: 1px solid #ccc; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-box">IHS</div>
+  <div class="title-group">
+    <h1>IHS Relatório de Pagamento</h1>
+    <span>Gestão & Controle Financeiro</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('clientes', this)">👤 Clientes</button>
+  <button onclick="showTab('pagamentos', this)">💳 Pagamentos</button>
+  <button onclick="showTab('relatorio', this)">📊 Relatório</button>
+</nav>
+
+<!-- ===== ABA CLIENTES ===== -->
+<div id="tab-clientes" class="tab active">
+  <div class="card">
+    <h2>Cadastro de Cliente</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome completo *</label>
+        <input type="text" id="cli-nome" placeholder="Nome do cliente" />
+      </div>
+      <div class="form-group">
+        <label>CPF / CNPJ *</label>
+        <input type="text" id="cli-doc" placeholder="000.000.000-00" maxlength="18" />
+      </div>
+      <div class="form-group">
+        <label>Telefone</label>
+        <input type="text" id="cli-tel" placeholder="(00) 00000-0000" maxlength="15" />
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="cli-email" placeholder="email@exemplo.com" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="salvarCliente()">+ Cadastrar Cliente</button>
+      <button class="btn btn-secondary" onclick="limparFormCliente()">Limpar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Clientes Cadastrados</h2>
+    <div class="filtros">
+      <div class="form-group">
+        <label>Buscar</label>
+        <input type="text" id="busca-cliente" placeholder="Nome ou documento..." oninput="renderClientes()" />
+      </div>
+    </div>
+    <div id="tabela-clientes"><p class="empty">Nenhum cliente cadastrado.</p></div>
+  </div>
+</div>
+
+<!-- ===== ABA PAGAMENTOS ===== -->
+<div id="tab-pagamentos" class="tab">
+  <div class="card">
+    <h2>Registrar Pagamento</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Cliente *</label>
+        <select id="pag-cliente" onchange="preencherDocPag()">
+          <option value="">Selecione o cliente...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CPF / CNPJ</label>
+        <input type="text" id="pag-doc" placeholder="Preenchido automaticamente" readonly style="background:#f0f8f8; color:#0a6a6a; font-weight:600"/>
+      </div>
+      <div class="form-group">
+        <label>Data do Pagamento *</label>
+        <input type="date" id="pag-data" />
+      </div>
+      <div class="form-group">
+        <label>Valor (R$) *</label>
+        <input type="text" id="pag-valor" placeholder="0,00" oninput="mascaraValor(this)" />
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Observação</label>
+        <input type="text" id="pag-obs" placeholder="Referência, descrição..." />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="salvarPagamento()">+ Registrar Pagamento</button>
+      <button class="btn btn-secondary" onclick="limparFormPag()">Limpar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pagamentos Registrados</h2>
+    <div class="filtros">
+      <div class="form-group">
+        <label>Filtrar por Cliente</label>
+        <select id="filtro-pag-cliente" onchange="renderPagamentos()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Mês</label>
+        <select id="filtro-pag-mes" onchange="renderPagamentos()">
+          <option value="">Todos</option>
+          <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+          <option value="03">Março</option><option value="04">Abril</option>
+          <option value="05">Maio</option><option value="06">Junho</option>
+          <option value="07">Julho</option><option value="08">Agosto</option>
+          <option value="09">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ano</label>
+        <input type="number" id="filtro-pag-ano" placeholder="2025" style="width:110px" oninput="renderPagamentos()" />
+      </div>
+    </div>
+    <div id="tabela-pagamentos"><p class="empty">Nenhum pagamento registrado.</p></div>
+  </div>
+</div>
+
+<!-- ===== ABA RELATÓRIO ===== -->
+<div id="tab-relatorio" class="tab">
+  <div class="filtros">
+    <div class="form-group">
+      <label>Ano do Exercício *</label>
+      <input type="number" id="rel-ano" placeholder="2025" style="width:130px" />
+    </div>
+    <div class="form-group">
+      <label>Cliente (opcional)</label>
+      <select id="rel-cliente">
+        <option value="">Todos os clientes</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" onclick="gerarRelatorio()">🔍 Gerar Relatório</button>
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-excel" onclick="exportarExcel()">📥 Exportar Excel</button>
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+
+  <div id="stats-relatorio" class="stats-grid" style="display:none"></div>
+  <div id="conteudo-relatorio"><p class="empty">Configure os filtros e clique em "Gerar Relatório".</p></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  let clientes  = JSON.parse(localStorage.getItem('clientes')  || '[]');
+  let pagamentos = JSON.parse(localStorage.getItem('pagamentos') || '[]');
+  let ultimoRelatorio = null; // cache para exportação
+
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // ── Utils ──────────────────────────────────────────────────
+  function salvar() {
+    localStorage.setItem('clientes',   JSON.stringify(clientes));
+    localStorage.setItem('pagamentos', JSON.stringify(pagamentos));
+  }
+
+  function toast(msg, erro = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (erro ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 2800);
+  }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+  function mascaraDoc(v) {
+    v = v.replace(/\D/g,'');
+    if (v.length <= 11) {
+      v = v.replace(/(\d{3})(\d)/,'$1.$2');
+      v = v.replace(/(\d{3})(\d)/,'$1.$2');
+      v = v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+    } else {
+      v = v.replace(/(\d{2})(\d)/,'$1.$2');
+      v = v.replace(/(\d{3})(\d)/,'$1.$2');
+      v = v.replace(/(\d{3})(\d)/,'$1/$2');
+      v = v.replace(/(\d{4})(\d{1,2})$/,'$1-$2');
+    }
+    return v;
+  }
+
+  function mascaraTel(v) {
+    v = v.replace(/\D/g,'').slice(0,11);
+    if (v.length >= 7) v = v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3');
+    else if (v.length >= 3) v = v.replace(/(\d{2})(\d+)/,'($1) $2');
+    return v;
+  }
+
+  function mascaraValor(el) {
+    let v = el.value.replace(/\D/g,'');
+    v = (parseInt(v||0)/100).toFixed(2);
+    el.value = v.replace('.',',');
+  }
+
+  function valorNumerico(str) {
+    return parseFloat((str||'0').replace('.','').replace(',','.')) || 0;
+  }
+
+  function formatarValor(n) {
+    return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function formatarData(str) {
+    if (!str) return '-';
+    const [y,m,d] = str.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  // Máscaras ao digitar
+  document.getElementById('cli-doc').addEventListener('input', function(){ this.value = mascaraDoc(this.value); });
+  document.getElementById('cli-tel').addEventListener('input', function(){ this.value = mascaraTel(this.value); });
+
+  // ── Tabs ──────────────────────────────────────────────────
+  function showTab(tab, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    btn.classList.add('active');
+    if (tab === 'pagamentos') { atualizarSelects(); renderPagamentos(); }
+    if (tab === 'relatorio')  { atualizarSelects(); document.getElementById('rel-ano').value = new Date().getFullYear(); }
+    if (tab === 'clientes')   renderClientes();
+  }
+
+  // ── Clientes ──────────────────────────────────────────────
+  function salvarCliente() {
+    const nome  = document.getElementById('cli-nome').value.trim();
+    const doc   = document.getElementById('cli-doc').value.trim();
+    const tel   = document.getElementById('cli-tel').value.trim();
+    const email = document.getElementById('cli-email').value.trim();
+    if (!nome) return toast('Informe o nome do cliente.', true);
+    if (!doc)  return toast('Informe o CPF ou CNPJ.', true);
+    if (clientes.find(c => c.doc === doc)) return toast('Documento já cadastrado!', true);
+    clientes.push({ id: uid(), nome, doc, tel, email });
+    salvar(); renderClientes(); limparFormCliente();
+    toast('Cliente cadastrado com sucesso!');
+  }
+
+  function excluirCliente(id) {
+    if (!confirm('Excluir este cliente? Os pagamentos associados também serão removidos.')) return;
+    clientes   = clientes.filter(c => c.id !== id);
+    pagamentos = pagamentos.filter(p => p.clienteId !== id);
+    salvar(); renderClientes(); toast('Cliente removido.');
+  }
+
+  function limparFormCliente() {
+    ['cli-nome','cli-doc','cli-tel','cli-email'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function renderClientes() {
+    const busca = (document.getElementById('busca-cliente').value || '').toLowerCase();
+    const lista = clientes.filter(c => c.nome.toLowerCase().includes(busca) || c.doc.includes(busca));
+    const div = document.getElementById('tabela-clientes');
+    if (!lista.length) { div.innerHTML = '<p class="empty">Nenhum cliente encontrado.</p>'; return; }
+    div.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Nome</th><th>CPF / CNPJ</th><th>Telefone</th><th>E-mail</th><th>Pagamentos</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${lista.map(c => {
+            const qtd = pagamentos.filter(p => p.clienteId === c.id).length;
+            return `<tr>
+              <td><b>${c.nome}</b></td>
+              <td><span class="badge badge-teal">${c.doc}</span></td>
+              <td>${c.tel || '-'}</td>
+              <td>${c.email || '-'}</td>
+              <td><span class="badge badge-green">${qtd} reg.</span></td>
+              <td><button class="btn btn-danger" onclick="excluirCliente('${c.id}')">Excluir</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── Pagamentos ────────────────────────────────────────────
+  function atualizarSelects() {
+    ['pag-cliente','filtro-pag-cliente','rel-cliente'].forEach(id => {
+      const el  = document.getElementById(id);
+      const val = el.value;
+      const primeira = id === 'pag-cliente'
+        ? '<option value="">Selecione o cliente...</option>'
+        : '<option value="">Todos os clientes</option>';
+      el.innerHTML = primeira + clientes
+        .slice().sort((a,b) => a.nome.localeCompare(b.nome))
+        .map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+      el.value = val;
+    });
+  }
+
+  function preencherDocPag() {
+    const cli = clientes.find(c => c.id === document.getElementById('pag-cliente').value);
+    document.getElementById('pag-doc').value = cli ? cli.doc : '';
+  }
+
+  function salvarPagamento() {
+    const clienteId = document.getElementById('pag-cliente').value;
+    const data      = document.getElementById('pag-data').value;
+    const valorStr  = document.getElementById('pag-valor').value;
+    const obs       = document.getElementById('pag-obs').value.trim();
+    if (!clienteId) return toast('Selecione um cliente.', true);
+    if (!data)      return toast('Informe a data do pagamento.', true);
+    if (!valorStr)  return toast('Informe o valor.', true);
+    const valor = valorNumerico(valorStr);
+    if (valor <= 0) return toast('Valor inválido.', true);
+    const cli = clientes.find(c => c.id === clienteId);
+    pagamentos.push({ id: uid(), clienteId, clienteNome: cli.nome, clienteDoc: cli.doc, data, valor, obs });
+    salvar(); renderPagamentos(); limparFormPag();
+    toast('Pagamento registrado!');
+  }
+
+  function excluirPagamento(id) {
+    if (!confirm('Excluir este pagamento?')) return;
+    pagamentos = pagamentos.filter(p => p.id !== id);
+    salvar(); renderPagamentos(); toast('Pagamento removido.');
+  }
+
+  function limparFormPag() {
+    ['pag-cliente','pag-data','pag-valor','pag-obs'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pag-doc').value = '';
+  }
+
+  function renderPagamentos() {
+    const fC  = document.getElementById('filtro-pag-cliente').value;
+    const fM  = document.getElementById('filtro-pag-mes').value;
+    const fA  = document.getElementById('filtro-pag-ano').value;
+    let lista = [...pagamentos];
+    if (fC) lista = lista.filter(p => p.clienteId === fC);
+    if (fM) lista = lista.filter(p => p.data.split('-')[1] === fM);
+    if (fA) lista = lista.filter(p => p.data.split('-')[0] === fA);
+    lista.sort((a,b) => a.data.localeCompare(b.data));
+    const div = document.getElementById('tabela-pagamentos');
+    if (!lista.length) { div.innerHTML = '<p class="empty">Nenhum pagamento encontrado.</p>'; return; }
+    const total = lista.reduce((s,p) => s + p.valor, 0);
+    div.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Data</th><th>Cliente</th><th>CPF / CNPJ</th><th>Valor</th><th>Observação</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${lista.map(p => `<tr>
+            <td>${formatarData(p.data)}</td>
+            <td><b>${p.clienteNome}</b></td>
+            <td><span class="badge badge-teal">${p.clienteDoc}</span></td>
+            <td><b>${formatarValor(p.valor)}</b></td>
+            <td>${p.obs || '-'}</td>
+            <td><button class="btn btn-danger" onclick="excluirPagamento('${p.id}')">✕</button></td>
+          </tr>`).join('')}
+          <tr style="background:#e8f9f9">
+            <td colspan="3"><b>TOTAL</b></td>
+            <td colspan="3"><b style="color:#0a6a6a">${formatarValor(total)}</b></td>
+          </tr>
+        </tbody>
+      </table>`;
+  }
+
+  // ── Relatório ─────────────────────────────────────────────
+  function gerarRelatorio() {
+    const ano      = document.getElementById('rel-ano').value;
+    const fCliente = document.getElementById('rel-cliente').value;
+    if (!ano) return toast('Informe o ano do exercício.', true);
+
+    let lista = pagamentos.filter(p => p.data.startsWith(ano));
+    if (fCliente) lista = lista.filter(p => p.clienteId === fCliente);
+
+    const divStats = document.getElementById('stats-relatorio');
+    const divRel   = document.getElementById('conteudo-relatorio');
+
+    if (!lista.length) {
+      divStats.style.display = 'none';
+      divRel.innerHTML = '<p class="empty">Nenhum pagamento encontrado para os filtros selecionados.</p>';
+      ultimoRelatorio = null;
+      return;
+    }
+
+    // Guardar cache para exportação
+    ultimoRelatorio = { lista, ano };
+
+    // Stats
+    const totalGeral  = lista.reduce((s,p) => s + p.valor, 0);
+    const qtdClientes = new Set(lista.map(p => p.clienteId)).size;
+    const mesesAtivos = new Set(lista.map(p => p.data.split('-')[1])).size;
+
+    divStats.style.display = 'grid';
+    divStats.innerHTML = `
+      <div class="stat-card"><div class="label">Total do Exercício</div><div class="value">${formatarValor(totalGeral)}</div></div>
+      <div class="stat-card"><div class="label">Clientes</div><div class="value">${qtdClientes}</div></div>
+      <div class="stat-card"><div class="label">Pagamentos</div><div class="value">${lista.length}</div></div>
+      <div class="stat-card"><div class="label">Meses com Movimento</div><div class="value">${mesesAtivos}</div></div>
+    `;
+
+    // Agrupar por mês → cliente
+    const porMes = {};
+    lista.forEach(p => {
+      const mes = p.data.split('-')[1];
+      if (!porMes[mes]) porMes[mes] = {};
+      if (!porMes[mes][p.clienteId]) porMes[mes][p.clienteId] = { nome: p.clienteNome, doc: p.clienteDoc, pagamentos: [] };
+      porMes[mes][p.clienteId].pagamentos.push(p);
+    });
+
+    const mesesComDados = Object.keys(porMes).sort();
+
+    let html = '';
+
+    // Blocos por mês
+    mesesComDados.forEach(mes => {
+      const nomeMes  = MESES[parseInt(mes)-1];
+      const clisNoMes = porMes[mes];
+      const totalMes  = Object.values(clisNoMes).reduce((s,c) => s + c.pagamentos.reduce((ss,p)=>ss+p.valor,0), 0);
+
+      html += `<div class="relatorio-bloco">
+        <div class="mes-header">
+          <span>📅 ${nomeMes} / ${ano}</span>
+          <span class="mes-total">Total do mês: ${formatarValor(totalMes)}</span>
+        </div>
+        <div class="cliente-bloco">`;
+
+      Object.values(clisNoMes).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
+        const totalCli = c.pagamentos.reduce((s,p) => s + p.valor, 0);
+        html += `
+          <div class="cliente-header">
+            <span>👤 ${c.nome} <span class="cli-doc">| ${c.doc}</span></span>
+            <span class="cli-subtotal">${formatarValor(totalCli)}</span>
+          </div>
+          <table class="pag-table">
+            <thead><tr>
+              <th>Data</th><th>CPF / CNPJ</th><th>Valor</th><th>Observação</th>
+            </tr></thead>
+            <tbody>
+              ${c.pagamentos.sort((a,b)=>a.data.localeCompare(b.data)).map(p=>`
+                <tr>
+                  <td>${formatarData(p.data)}</td>
+                  <td><span class="badge badge-teal">${p.clienteDoc}</span></td>
+                  <td><b>${formatarValor(p.valor)}</b></td>
+                  <td>${p.obs||'-'}</td>
+                </tr>`).join('')}
+              <tr class="pag-total-row">
+                <td colspan="2">Total — ${c.nome.split(' ')[0]}</td>
+                <td><b>${formatarValor(totalCli)}</b></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    // Consolidado por cliente × mês
+    const clientesMap = {};
+    lista.forEach(p => {
+      if (!clientesMap[p.clienteId]) clientesMap[p.clienteId] = { nome: p.clienteNome, doc: p.clienteDoc, meses: {} };
+      const mes = p.data.split('-')[1];
+      clientesMap[p.clienteId].meses[mes] = (clientesMap[p.clienteId].meses[mes]||0) + p.valor;
+    });
+
+    const totalPorMes = {};
+    mesesComDados.forEach(m => {
+      totalPorMes[m] = Object.values(clientesMap).reduce((s,c) => s+(c.meses[m]||0), 0);
+    });
+    const totalGeral2 = Object.values(totalPorMes).reduce((s,v)=>s+v,0);
+
+    html += `<div class="relatorio-bloco">
+      <div class="mes-header">
+        <span>📋 Consolidado por Cliente — Exercício ${ano}</span>
+        <span class="mes-total">Total Geral: ${formatarValor(totalGeral2)}</span>
+      </div>
+      <div class="cliente-bloco" style="overflow-x:auto">
+        <table class="consolidado-table">
+          <thead><tr>
+            <th>Cliente</th>
+            <th>CPF / CNPJ</th>
+            ${mesesComDados.map(m=>`<th>${MESES[parseInt(m)-1].slice(0,3)}</th>`).join('')}
+            <th>Total</th>
+          </tr></thead>
+          <tbody>
+            ${Object.values(clientesMap).sort((a,b)=>a.nome.localeCompare(b.nome)).map(c => {
+              const totalCli = Object.values(c.meses).reduce((s,v)=>s+v,0);
+              return `<tr>
+                <td><b>${c.nome}</b></td>
+                <td><span class="badge badge-teal">${c.doc}</span></td>
+                ${mesesComDados.map(m => `<td>${c.meses[m] ? formatarValor(c.meses[m]) : '-'}</td>`).join('')}
+                <td><b style="color:#0a6a6a">${formatarValor(totalCli)}</b></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot><tr>
+            <td colspan="2"><b>TOTAL DO MÊS</b></td>
+            ${mesesComDados.map(m=>`<td><b>${formatarValor(totalPorMes[m])}</b></td>`).join('')}
+            <td><b>${formatarValor(totalGeral2)}</b></td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+
+    divRel.innerHTML = html;
+  }
+
+  // ── Exportar Excel ────────────────────────────────────────
+  function exportarExcel() {
+    if (!ultimoRelatorio) return toast('Gere o relatório antes de exportar.', true);
+
+    const { lista, ano } = ultimoRelatorio;
+    const wb = XLSX.utils.book_new();
+
+    // ── Aba 1: Detalhado por Mês ──
+    const porMes = {};
+    lista.forEach(p => {
+      const mes = p.data.split('-')[1];
+      if (!porMes[mes]) porMes[mes] = {};
+      if (!porMes[mes][p.clienteId]) porMes[mes][p.clienteId] = { nome: p.clienteNome, doc: p.clienteDoc, pagamentos: [] };
+      porMes[mes][p.clienteId].pagamentos.push(p);
+    });
+
+    const rowsDetalhado = [
+      ['IHS Relatório de Pagamento — Detalhado por Mês — Exercício ' + ano],
+      [],
+      ['Mês', 'Cliente', 'CPF / CNPJ', 'Data', 'Valor (R$)', 'Observação']
+    ];
+
+    Object.keys(porMes).sort().forEach(mes => {
+      const nomeMes = MESES[parseInt(mes)-1];
+      let totalMes  = 0;
+      Object.values(porMes[mes]).sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(c => {
+        let totalCli = 0;
+        c.pagamentos.sort((a,b)=>a.data.localeCompare(b.data)).forEach(p => {
+          rowsDetalhado.push([nomeMes, p.clienteNome, p.clienteDoc, formatarData(p.data), p.valor, p.obs||'']);
+          totalCli += p.valor;
+          totalMes += p.valor;
+        });
+        rowsDetalhado.push(['', `Subtotal — ${c.nome}`, c.doc, '', totalCli, '']);
+      });
+      rowsDetalhado.push([`Total ${nomeMes}`, '', '', '', totalMes, '']);
+      rowsDetalhado.push([]);
+    });
+
+    const wsDetalhado = XLSX.utils.aoa_to_sheet(rowsDetalhado);
+    wsDetalhado['!cols'] = [{wch:12},{wch:30},{wch:18},{wch:12},{wch:14},{wch:28}];
+    XLSX.utils.book_append_sheet(wb, wsDetalhado, 'Detalhado por Mês');
+
+    // ── Aba 2: Consolidado por Cliente ──
+    const mesesComDados = Object.keys(porMes).sort();
+    const clientesMap = {};
+    lista.forEach(p => {
+      if (!clientesMap[p.clienteId]) clientesMap[p.clienteId] = { nome: p.clienteNome, doc: p.clienteDoc, meses: {} };
+      const mes = p.data.split('-')[1];
+      clientesMap[p.clienteId].meses[mes] = (clientesMap[p.clienteId].meses[mes]||0) + p.valor;
+    });
+
+    const headerConsolidado = ['Cliente', 'CPF / CNPJ', ...mesesComDados.map(m => MESES[parseInt(m)-1]), 'Total'];
+    const rowsConsolidado = [
+      ['IHS Relatório de Pagamento — Consolidado por Cliente — Exercício ' + ano],
+      [],
+      headerConsolidado
+    ];
+
+    Object.values(clientesMap).sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(c => {
+      const totalCli = Object.values(c.meses).reduce((s,v)=>s+v,0);
+      rowsConsolidado.push([
+        c.nome, c.doc,
+        ...mesesComDados.map(m => c.meses[m] || 0),
+        totalCli
+      ]);
+    });
+
+    // Linha de totais
+    const totalPorMes = mesesComDados.map(m =>
+      Object.values(clientesMap).reduce((s,c)=>s+(c.meses[m]||0),0)
+    );
+    rowsConsolidado.push([
+      'TOTAL', '',
+      ...totalPorMes,
+      totalPorMes.reduce((s,v)=>s+v,0)
+    ]);
+
+    const wsConsolidado = XLSX.utils.aoa_to_sheet(rowsConsolidado);
+    const colWidths = [{wch:30},{wch:18},...mesesComDados.map(()=>({wch:13})),{wch:14}];
+    wsConsolidado['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, wsConsolidado, 'Consolidado por Cliente');
+
+    // ── Aba 3: Todos os Pagamentos ──
+    const rowsTodos = [
+      ['IHS Relatório de Pagamento — Todos os Registros — Exercício ' + ano],
+      [],
+      ['Data', 'Mês', 'Cliente', 'CPF / CNPJ', 'Valor (R$)', 'Observação']
+    ];
+    [...lista].sort((a,b)=>a.data.localeCompare(b.data)).forEach(p => {
+      const mes = MESES[parseInt(p.data.split('-')[1])-1];
+      rowsTodos.push([formatarData(p.data), mes, p.clienteNome, p.clienteDoc, p.valor, p.obs||'']);
+    });
+    rowsTodos.push([]);
+    rowsTodos.push(['', '', 'TOTAL GERAL', '', lista.reduce((s,p)=>s+p.valor,0), '']);
+
+    const wsTodos = XLSX.utils.aoa_to_sheet(rowsTodos);
+    wsTodos['!cols'] = [{wch:12},{wch:12},{wch:30},{wch:18},{wch:14},{wch:28}];
+    XLSX.utils.book_append_sheet(wb, wsTodos, 'Todos os Pagamentos');
+
+    XLSX.writeFile(wb, `IHS_Relatorio_Pagamentos_${ano}.xlsx`);
+    toast('Excel exportado com sucesso!');
+  }
+
+  // Init
+  atualizarSelects();
+  renderClientes();
+  document.getElementById('rel-ano').value = new Date().getFullYear();
+</script>
+</body>
+</html>
